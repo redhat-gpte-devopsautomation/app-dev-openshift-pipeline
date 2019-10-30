@@ -39,7 +39,7 @@ oc new-build --strategy=docker -D $'FROM quay.io/openshift/origin-jenkins-agent-
 # You may hardcode your user id and password here because
 # this shell scripts lives in a private repository
 # Passing it from Jenkins would show it in the Jenkins Log
-oc secrets new-basic-auth gitea-creds --username=bgottfri-redhat.com --password=r3dh4t1! -n ${GUID}-jenkins
+oc create secret generic gitea-creds --from-literal=username=bgottfri-redhat.com --from-literal=password=r3dh4t1! -n ${GUID}-jenkins
 
 
 
