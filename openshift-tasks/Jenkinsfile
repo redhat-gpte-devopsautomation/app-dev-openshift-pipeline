@@ -84,8 +84,8 @@ podTemplate(
         // TBD: Build Image, tag Image
         //      Make sure the image name is correct!
         sh "oc new-build --binary=true --name=${imageName} --image-stream=jboss-eap71-openshift:1.4 -n ${devProject}"
-        sh "oc start-build ${imageName} --from-file=https://homework-nexus.apps.shared.na.openshift.opentlc.com/releases/org/jboss/quickstarts/eap/${imageName}/${devTag}/${imageName}-${devTag}.version --wait=true"
-        sh "oc tag ${imageName}:latest ${imageName}:${devTag}"
+        sh "oc start-build ${imageName} -n ${devProject} --from-file=https://homework-nexus.apps.shared.na.openshift.opentlc.com/releases/org/jboss/quickstarts/eap/${imageName}/${devTag}/${imageName}-${devTag}.version --wait=true"
+        sh "oc tag -n ${devProject} ${imageName}:latest ${imageName}:${devTag}"
 
       }
 
