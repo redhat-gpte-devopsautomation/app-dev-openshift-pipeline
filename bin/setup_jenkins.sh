@@ -46,7 +46,7 @@ oc create secret generic gitea-creds --from-literal=user=bgottfri-redhat.com --f
 # Create pipeline build config pointing to the ${REPO} with contextDir `openshift-tasks`
 # Build config has to be called 'tasks-pipeline'.
 # Make sure you use your secret to access the repository
-oc new-build https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git --name=tasks-pipeline --strategy=pipeline --context-dir=openshift-tasks --source-secret=gitea-creds -n ${GUID}-jenkins
+oc create -f tasks-pipeline.bc.yaml
 
 
 
