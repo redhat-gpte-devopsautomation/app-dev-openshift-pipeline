@@ -76,7 +76,7 @@ podTemplate(
         echo "Publish to Nexus"
 
         // TBD: Publish to Nexus
-        sh "${mvnCmd} deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::https://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases"
+        sh "${mvnCmd} deploy -DskipTests=true -DaltDeploymentRepository=nexus::default::http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases"
       }
 
       // Build the OpenShift Image in OpenShift and tag it.
@@ -86,7 +86,7 @@ podTemplate(
         // TBD: Build Image, tag Image
         //      Make sure the image name is correct!
         sh "oc new-build --binary=true --name=${imageName} --image-stream=jboss-eap71-openshift:1.4 -n ${devProject}"
-        sh "oc start-build ${imageName} -n ${devProject} --from-file=https://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/releases/org/jboss/quickstarts/eap/${imageName}/${devTag}/${imageName}-${devTag}.version --wait=true"
+        sh "oc start-build ${imageName} -n ${devProject} --from-file=http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/releases/org/jboss/quickstarts/eap/${imageName}/${devTag}/${imageName}-${devTag}.version --wait=true"
         sh "oc tag -n ${devProject} ${imageName}:latest ${imageName}:${devTag}"
 
       }
