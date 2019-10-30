@@ -1,0 +1,35 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    build: tasks-pipeline
+  name: tasks-pipeline
+  namespace: 654f-jenkins
+spec:
+  failedBuildsHistoryLimit: 5
+  nodeSelector: {}
+  output: {}
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    contextDir: openshift-tasks
+    git:
+      ref: master
+      uri: https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git
+    sourceSecret:
+      name: gitea-creds
+    type: Git
+  strategy:
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile
+    type: JenkinsPipeline
+  successfulBuildsHistoryLimit: 5
+  triggers:
+  - github:
+      secret: BKUqBsXCtm8saMOmBTq1
+    type: GitHub
+  - generic:
+      secret: YrSfg1nx2EGGriAlEAmX
+    type: Generic
+  - type: ConfigChange
