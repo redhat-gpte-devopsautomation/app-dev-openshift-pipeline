@@ -50,7 +50,7 @@ podTemplate(
         echo "Building version ${devTag}"
 
         // TBD: Execute Maven Build
-        sh("${mvnCmd} clean package -dskipTests=true")
+        sh("${mvnCmd} clean package -DskipTests=true")
       }
 
       // Using Maven run the unit tests
