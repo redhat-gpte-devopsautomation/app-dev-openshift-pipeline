@@ -4,7 +4,6 @@ metadata:
   labels:
     build: tasks-pipeline
   name: tasks-pipeline
-  namespace: 654f-jenkins
 spec:
   failedBuildsHistoryLimit: 5
   nodeSelector: {}

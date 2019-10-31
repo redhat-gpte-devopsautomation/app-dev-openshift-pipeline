@@ -85,7 +85,7 @@ podTemplate(
 
         // TBD: Build Image, tag Image
         //      Make sure the image name is correct!
-        sh "oc new-build --binary=true --name=taskbuild --image-stream=jboss-eap71-openshift:1.4 -n ${devProject} --to=${imageName}:latest"
+        sh "oc apply -f tasksbinarybuild.bc.yaml"
         sh "oc start-build taskbuild -n ${devProject} --from-file=http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases/org/jboss/quickstarts/eap/${imageName}/${version}/${imageName}-${version}.war --wait=true"
         sh "oc tag -n ${devProject} ${imageName}:latest ${imageName}:${devTag}"
 
