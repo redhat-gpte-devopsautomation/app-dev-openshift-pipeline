@@ -143,10 +143,6 @@ podTemplate(
 
       stage('Blue/Green Production Deployment') {
         // TBD: Determine which application is active
-        //      Set Image, Set VERSION
-        //      (Re-)create ConfigMap
-        //      Deploy into the other application
-        //      Make sure the application is running and ready before proceeding
         script {
           openshift.withCluster() {
             openshift.withProject("${prodProject}") {
@@ -164,6 +160,21 @@ podTemplate(
               // Update the Image on the Production Deployment Config
               def dc = openshift.selector("dc/${destApp}").object()
               dc.spec.template.spec.containers[0].image="image-registry.openshift-image-registry.svc:5000/${devProject}/${imageName}:${prodTag}"
+              openshift.apply(dc)
+              //      (Re-)create ConfigMap
+              openshift.selector("configmap", "${destApp}-config").delete()
+              def configmap = openshift.create("configmap", "${destApp}-config", "--from-file=./configuration/application-users.properties", "--from-file=./configuration/application-roles.properties" )
+              //      Deploy into the other application
+              openshift.selector("dc", "${destApp}").rollout().latest();
+              //      Make sure the application is running and ready before proceeding
+              def dc_prod = openshift.selector("dc", "${destApp}").object()
+              def dc_version = dc_prod.status.latestVersion
+              def rc_prod = openshift.selector("rc", "${destApp}-${dc_version}").object()
+              echo "Waiting for ${destApp} to be ready"
+              while (rc_prod.spec.replicas != rc_prod.status.readyReplicas) {
+                sleep 5
+                rc_prod = openshift.selector("rc", "${destApp}-${dc_version}").object()
+              }
             }
           }
         }
@@ -175,6 +186,16 @@ podTemplate(
         // TBD: Execute switch
         //      Hint: sleep 5 seconds after the switch for the route to be fully
         //            switched over
+        script {
+          openshift.withCluster() {
+            openshift.withProject("${prodProject}") {
+              def route = openshift.selector("route/tasks").object()
+              route.spec.to.name="${destApp}"
+              openshift.apply(route)
+              sleep 5
+            }
+          }
+        }
 
       }
     }
