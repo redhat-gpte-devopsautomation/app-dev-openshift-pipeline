@@ -96,9 +96,32 @@ podTemplate(
         echo "Deploying container image to Development Project"
 
         // TBD: Deploy to development Project
-        //      Set Image, Set VERSION
-        //      (Re-) Create ConfigMap
-        //      Make sure the application is running and ready before proceeding
+        script {
+          // Update the Image on the Development Deployment Config
+          openshift.withCluster() {
+            openshift.withProject("${devProject}") {
+              //      Set Image, Set VERSION
+              openshift.set("image", "dc/tasks", "tasks=image-registry.openshift-image-registry.svc:5000/${devProject}/tasks:${devTag}")
+              //      (Re-) Create ConfigMap
+              openshift.selector('configmap', 'tasks-config').delete()
+              def configmap = openshift.create('configmap', 'tasks-config', '--from-file=./configuration/application-users.properties', '--from-file=./configuration/application-roles.properties' )
+              //      Make sure the application is running and ready before proceeding
+              openshift.selector("dc", "tasks").rollout().latest();
+              def dc = openshift.selector("dc", "tasks").object()
+              def dc_version = dc.status.latestVersion
+              def rc = openshift.selector("rc", "tasks-${dc_version}").object()
+
+              echo "Waiting for ReplicationController tasks-${dc_version} to be ready"
+              while (rc.spec.replicas != rc.status.readyReplicas) {
+                sleep 5
+                rc = openshift.selector("rc", "tasks-${dc_version}").object()
+              }
+            }
+          }
+        }
+
+
+
 
       }
 
@@ -123,6 +146,26 @@ podTemplate(
         //      (Re-)create ConfigMap
         //      Deploy into the other application
         //      Make sure the application is running and ready before proceeding
+        script {
+          openshift.withCluster() {
+            openshift.withProject("${prodProject}") {
+              activeApp = openshift.selector("route", "tasks").object().spec.to.name
+              if (activeApp == "tasks-green") {
+                destApp = "tasks-blue"
+              }
+              else
+              {
+                destApp = "tasks-green"
+              }
+              echo "Active Application:      " + activeApp
+              echo "Destination Application: " + destApp
+
+              // Update the Image on the Production Deployment Config
+              def dc = openshift.selector("dc/${destApp}").object()
+              dc.spec.template.spec.containers[0].image="image-registry.openshift-image-registry.svc:5000/${devProject}/tasks:${prodTag}"
+            }
+          }
+        }
 
       }
 
