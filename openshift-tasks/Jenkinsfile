@@ -101,7 +101,7 @@ podTemplate(
           openshift.withCluster() {
             openshift.withProject("${devProject}") {
               //      Set Image, Set VERSION
-              openshift.set("image", "dc/tasks", "tasks=image-registry.openshift-image-registry.svc:5000/${devProject}/tasks:${devTag}")
+              openshift.set("image", "dc/tasks", "tasks=image-registry.openshift-image-registry.svc:5000/${devProject}/${imageName}:${devTag}")
               //      (Re-) Create ConfigMap
               openshift.selector('configmap', 'tasks-config').delete()
               def configmap = openshift.create('configmap', 'tasks-config', '--from-file=./configuration/application-users.properties', '--from-file=./configuration/application-roles.properties' )
@@ -130,7 +130,7 @@ podTemplate(
         echo "Copy image to Nexus container registry"
 
         // TBD: Copy image to Nexus container registry
-        sh("skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds openshift:\$(oc whoami -t) --dest-creds admin:redhat docker://image-registry.openshift-image-registry.svc:5000/${devProject}/tasks:${devTag} docker://homework-nexus.gpte-hw-cicd.svc.cluster.local:5000/tasks:${devTag}")
+        sh("skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds openshift:\$(oc whoami -t) --dest-creds admin:redhat docker://image-registry.openshift-image-registry.svc:5000/${devProject}/${imageName}:${devTag} docker://homework-nexus.gpte-hw-cicd.svc.cluster.local:5000/${imageName}:${devTag}")
 
         // TBD: Tag the built image with the production tag.
         sh("oc tag -n ${prodProject} ${devProject}/${imageName}:${devTag} ${prodProject}/${imageName}:${prodTag}")
