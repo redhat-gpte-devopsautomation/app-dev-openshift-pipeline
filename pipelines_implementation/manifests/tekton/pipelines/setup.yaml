@@ -4,7 +4,7 @@ metadata:
   name: 1234-setup
 spec:
   resources:
-  - name: git-repo
+  - name: gitea-repo
     type: git
   params:
   - name: GUID
