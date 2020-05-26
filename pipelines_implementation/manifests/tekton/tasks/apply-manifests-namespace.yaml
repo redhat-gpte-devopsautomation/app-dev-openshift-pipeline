@@ -15,7 +15,7 @@ spec:
   resources:
     inputs:
     - name: source
-      type: git
+      type: gitea-repo
   steps:
   - args:
     - |-
