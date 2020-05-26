@@ -1,0 +1,21 @@
+Steps to set up Openshift Pipelines version of homework:
+
+1. Enable Openshift Pipelines tech preview (done by Wulfgang)
+2. Install Tekton CLI (https://github.com/tektoncd/cli)
+3. Install the apply-manifests task from the pipelines-tutorial repo (https://github.com/openshift/pipelines-tutorial/blob/master/01_pipeline/01_apply_manifest_task.yaml) with oc create
+4. Install the update-deployment task from the pipelines-tutorial repo (https://github.com/openshift/pipelines-tutorial/blob/master/01_pipeline/02_update_deployment.yaml) with oc create
+5. Create new PipelineResource for the homework Git repo with tkn resource create
+
+    $ tkn resource create
+    ? Enter a name for a pipeline resource : homework-repo
+    ? Select a resource type to create : git
+    ? Enter a value for url : https://homework-gitea.apps.shared.na.openshift.opentlc.com/wkulhane-redhat.com/ocp4_app_deploy_homework_solution.git
+    ? Enter a value for revision : master
+    
+6. Create new PipelineResource for the Openshift Container Registry
+
+    $ tkn resource create
+    ? Enter a name for a pipeline resource : tasks-image
+    ? Select a resource type to create : image
+    ? Enter a value for url :  image-registry.openshift-image-registry.svc:5000/1234-pipelines/1234-tasks:latest
+    ? Enter a value for digest :

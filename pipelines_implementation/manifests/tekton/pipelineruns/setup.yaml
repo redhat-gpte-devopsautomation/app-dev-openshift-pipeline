@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: setup
+  namespace: 1234-pipelines
+spec:
+  serviceAccountName: gitea-access
+  pipelineRef:
+    name: 1234-setup
+  params:
+    - name: GUID
+      value: 1234
