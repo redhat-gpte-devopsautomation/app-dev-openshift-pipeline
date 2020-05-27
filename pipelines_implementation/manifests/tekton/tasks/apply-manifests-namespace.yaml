@@ -15,10 +15,11 @@ spec:
   resources:
     inputs:
     - name: source
-      type: gitea-repo
+      type: git
   steps:
   - args:
     - |-
+      ls -l
       echo Applying manifests in $(inputs.params.manifest_dir) directory to namespace $(inputs.params.namespace)
       oc project $(inputs.params.namespace)
       oc apply -f $(inputs.params.manifest_dir)

@@ -7,5 +7,5 @@ spec:
   - name: url
     value: https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git
   - name: revision
-    value: master
+    value: pipelines
   type: git
