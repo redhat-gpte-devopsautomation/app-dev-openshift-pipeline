@@ -21,8 +21,7 @@ spec:
     - |-
       ls -l
       echo Applying manifests in $(inputs.params.manifest_dir) directory to namespace $(inputs.params.namespace)
-      oc project $(inputs.params.namespace)
-      oc apply -f $(inputs.params.manifest_dir)
+      oc apply -f $(inputs.params.manifest_dir) -n $(inputs.params.namespace)
       echo -----------------------------------
     command:
     - /bin/bash

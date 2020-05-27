@@ -2,8 +2,8 @@ apiVersion: image.openshift.io/v1
 kind: ImageStream
 metadata:
   labels:
-    build: 1234-tasks
-  name: 1234-tasks
+    build: tasks
+  name: tasks
 spec:
   lookupPolicy:
     local: false

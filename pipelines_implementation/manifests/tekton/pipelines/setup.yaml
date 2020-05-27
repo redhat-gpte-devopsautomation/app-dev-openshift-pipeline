@@ -23,3 +23,15 @@ spec:
         value: pipelines_implementation/manifests/tasks-dev
       - name: namespace
         value: $(params.GUID)-dev
+  - name: apply-prod-manifests
+    taskRef:
+      name: apply-manifests-namespace
+    resources:
+      inputs:
+      - name: source
+        resource: gitea-repo
+    params:
+      - name: manifest_dir
+        value: pipelines_implementation/manifests/tasks-prod
+      - name: namespace
+        value: $(params.GUID)-prod
