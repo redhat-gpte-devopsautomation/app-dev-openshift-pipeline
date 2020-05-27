@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: 1234-cleanup
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: clean-up-dev-tasks-app
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-dev -l app=tasks
+  - name: clean-up-dev-tasks-build
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-dev -l build=tasks
+  - name: clean-up-dev-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-dev tasks-config
+  - name: clean-up-prod-tasks-app
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-prod -l app=tasks
+  - name: clean-up-prod-tasks-build
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-prod -l build=tasks
+  - name: clean-up-prod-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-prod tasks-config
