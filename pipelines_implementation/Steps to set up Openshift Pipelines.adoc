@@ -11,6 +11,6 @@ Steps to set up Openshift Pipelines version of homework:
     ? Enter a value for revision : pipelines
     
 6. Edit gitea-creds-secret.yaml to have the correct username and password for your gitea account and apply it in the pipelines namespace
-7. Edit the default service account in the pipelines namespace to include the gitea-creds secret
+7. Edit the pipelines service account in the pipelines namespace to include the gitea-creds secret
 8. Apply the gitea-repo.yaml, apply-manifests-namepsace yaml, and pipelines/setup.yaml file to the pipelines namespace.
 9. Apply the pipelineruns/setup.yaml manifest to kick off the pipeline.
