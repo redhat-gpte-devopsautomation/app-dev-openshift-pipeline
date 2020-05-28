@@ -35,3 +35,16 @@ spec:
         value: pipelines_implementation/manifests/tasks-prod
       - name: namespace
         value: $(params.GUID)-prod
+  - name: create-pipeline-image
+    taskRef:
+      name: buildah
+      kind: ClusterTask
+    resources:
+      inputs:
+      - name: source
+        resource: gitea-repo
+    params:
+      - name: IMAGE
+        value: image-registry.openshift-image-registry.svc:5000/$(params.GUID)-pipelines/pipeline-agent-appdev:latest
+      - name: DOCKERFILE
+        value: pipelines_implementation/manifests/tekton/pipelines/pipeline-agent.dockerfile
