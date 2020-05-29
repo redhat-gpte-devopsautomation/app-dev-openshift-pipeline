@@ -45,6 +45,7 @@ spec:
         - "clean"
         - "package"
         - "-DskipTests=true"
+        - "-fopenshift-tasks"
     workspaces:
       - name: source
         workspace: source
