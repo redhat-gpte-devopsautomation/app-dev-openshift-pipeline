@@ -29,7 +29,7 @@ spec:
     params:
       - name: SCRIPT
         value: oc delete cm -n $(params.GUID)-tasks-dev tasks-config
-  - name: clean-up-maven-settings-cm
+  - name: clean-up-nexus-settings-cm
     taskRef:
       name: openshift-client
       kind: ClusterTask
