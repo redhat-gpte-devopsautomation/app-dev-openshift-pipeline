@@ -12,16 +12,11 @@ spec:
     description: The namespace to apply the manifests within
     name: namespace
     type: string
-  resources:
-    inputs:
-    - name: source
-      type: git
   steps:
   - args:
     - |-
-      ls -l
-      echo Applying manifests in $(inputs.params.manifest_dir) directory to namespace $(inputs.params.namespace)
-      oc apply -f $(inputs.params.manifest_dir) -n $(inputs.params.namespace)
+      echo Applying manifests in $(params.manifest_dir) directory to namespace $(params.namespace)
+      oc apply -f $(params.manifest_dir) -n $(params.namespace)
       echo -----------------------------------
     command:
     - /bin/bash
@@ -29,4 +24,7 @@ spec:
     image: quay.io/openshift/origin-cli:latest
     name: apply
     resources: {}
-    workingDir: /workspace/source
+    workingDir: /source
+  workspaces:
+  - name: source
+    mountPath: /source

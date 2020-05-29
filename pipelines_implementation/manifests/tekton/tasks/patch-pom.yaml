@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sed-replace
+spec:
+  params:
+  - description: File path to run sed against
+    name: file_path
+    type: string
+  - description: The value to replace the search_regex
+    name: replacement
+    type: string
+  - description: The value to replace in the file
+    name: search_regex
+    type: string
+  steps:
+  - args:
+    - |-
+      echo In-place editing $(inputs.params.file_path) to replace $(inputs.params.search_regex) with $(inputs.params.replacement)
+      sed -i 's/$(inputs.params.search_regex)/$(inputs.params.replacement)/g' $(inputs.params.file_path)
+      cat $(inputs.params.pom_path)
+      echo -----------------------------------
+    command:
+    - /bin/bash
+    - -c
+    image: registry.redhat.io/ubi7/ubi-minimal:latest
+    name: apply
+    resources: {}
+    workingDir: /source
+  workspaces:
+  - name: source
+    mountPath: /source

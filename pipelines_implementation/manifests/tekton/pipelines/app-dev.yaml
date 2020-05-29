@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: setup
+  name: app-dev
 spec:
   params:
   - name: GUID
@@ -22,31 +22,34 @@ spec:
     workspaces:
       - name: output
         workspace: source
-  - name: apply-dev-manifests
+  - name: patch-pom
     taskRef:
-      name: apply-manifests-namespace
+      name: bash
     runAfter:
     - clone-gitea-repo
     params:
-      - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-dev
-      - name: namespace
-        value: $(params.GUID)-tasks-dev
+      - name: ARGS
+        value: sed -i 's/GUID/$(params.GUID)/g' openshift-tasks/pom.xml
     workspaces:
-      - name: source
+      - name: workspace
         workspace: source
-  - name: apply-prod-manifests
-    runAfter:
-    - apply-dev-manifests
+  - name: mvn-build
     taskRef:
-      name: apply-manifests-namespace
+      name: maven
+      kind: ClusterTask
+    runAfter:
+    - patch-pom
     params:
-      - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-prod
-      - name: namespace
-        value: $(params.GUID)-tasks-prod
+      - name: GOALS
+        value: 
+        - "clean"
+        - "package"
+        - "-DskipTests=true"
     workspaces:
       - name: source
         workspace: source
+      - name: maven-settings
+        workspace: maven-settings
   workspaces:
     - name: source
+    - name: maven-settings 
