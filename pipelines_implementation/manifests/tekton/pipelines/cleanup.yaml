@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: 1234-cleanup
+  name: cleanup
 spec:
   params:
   - name: GUID
@@ -14,39 +14,53 @@ spec:
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete all -n $(params.GUID)-dev -l app=tasks
+        value: oc delete all -n $(params.GUID)-tasks-dev -l app=tasks
   - name: clean-up-dev-tasks-build
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete all -n $(params.GUID)-dev -l build=tasks
+        value: oc delete all -n $(params.GUID)-tasks-dev -l build=tasks
   - name: clean-up-dev-tasks-cm
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete cm -n $(params.GUID)-dev tasks-config
-  - name: clean-up-prod-tasks-app
+        value: oc delete cm -n $(params.GUID)-tasks-dev tasks-config
+  - name: clean-up-maven-settings-cm
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete all -n $(params.GUID)-prod -l app=tasks
-  - name: clean-up-prod-tasks-build
+        value: oc delete cm -n $(params.GUID)-tasks-dev nexus-settings
+  - name: clean-up-tasks-blue
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete all -n $(params.GUID)-prod -l build=tasks
-  - name: clean-up-prod-tasks-cm
+        value: oc delete all -n $(params.GUID)-tasks-prod -l app=tasks-blue
+  - name: clean-up-tasks-green
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc delete cm -n $(params.GUID)-prod tasks-config
+        value: oc delete all -n $(params.GUID)-tasks-prod -l app=tasks-green
+  - name: clean-up-blue-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-prod tasks-blue-config
+  - name: clean-up-green-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-prod tasks-green-config
