@@ -2,7 +2,7 @@ apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
   labels:
-    build: taskbuild
+    build: tasks
   name: taskbuild
 spec:
   failedBuildsHistoryLimit: 5
@@ -10,7 +10,7 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: 654f-tasks:latest
+      name: 1234-tasks:latest
   postCommit: {}
   resources: {}
   runPolicy: Serial

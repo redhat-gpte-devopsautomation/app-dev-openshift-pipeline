@@ -3,7 +3,7 @@ kind: ImageStream
 metadata:
   labels:
     build: tasks
-  name: tasks
+  name: 1234-tasks
 spec:
   lookupPolicy:
     local: false
