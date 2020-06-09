@@ -1,0 +1,70 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: fruit_management
+  name: fruit_management
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    app: fruit_management
+    deploymentconfig: fruit_management
+  strategy:
+    activeDeadlineSeconds: 21600
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+  template:
+    metadata:
+      labels:
+        app: fruit_management
+        deploymentconfig: fruit_management
+    spec:
+      containers:
+      - name: fruit_management
+        env:
+        - name: VERSION
+          value: 0.0 (fruit_management)
+        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-fruit_management:0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 8778
+            protocol: TCP
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+      restartPolicy: Always
+  triggers: []

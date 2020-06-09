@@ -1,0 +1,17 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  labels:
+    build: fruit_management
+  name: 1234-fruit_management
+spec:
+  lookupPolicy:
+    local: false
+  tags:
+  - name: 0.0-0
+    from:
+      kind: DockerImage
+      name: image-registry.openshift-image-registry.svc:5000/1234-fruit_management-dev/1234-fruit_management:0.0-0
+    importPolicy: {}
+    referencePolicy:
+      type: Source
