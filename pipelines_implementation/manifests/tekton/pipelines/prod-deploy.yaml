@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: prod-deploy
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: prod-switch-route
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - patch
+          - -n $(params.GUID)-tasks-prod
+          - route tasks
+          - -p {"spec":{"to":{"name":"tasks-blue"}}}
+  workspaces:
+    - name: source
+    - name: maven-settings 
+    - name: maven-repo
+
