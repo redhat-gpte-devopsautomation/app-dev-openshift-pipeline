@@ -2,15 +2,15 @@ apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
   labels:
-    build: fruit_management
-  name: fruit_management-build
+    build: fruit-management
+  name: fruit-management-build
 spec:
   failedBuildsHistoryLimit: 5
   nodeSelector: null
   output:
     to:
       kind: ImageStreamTag
-      name: 1234-fruit_management:latest
+      name: 1234-fruit-management:latest
   postCommit: {}
   resources: {}
   runPolicy: Serial

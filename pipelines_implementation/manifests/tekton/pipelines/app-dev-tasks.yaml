@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: app-dev
+  name: app-dev-tasks
 spec:
   params:
   - name: GUID

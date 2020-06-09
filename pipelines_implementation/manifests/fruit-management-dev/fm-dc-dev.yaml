@@ -2,14 +2,14 @@ apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
 metadata:
   labels:
-    app: fruit_management
-  name: fruit_management
+    app: fruit-management
+  name: fruit-management
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
-    app: fruit_management
-    deploymentconfig: fruit_management
+    app: fruit-management
+    deploymentconfig: fruit-management
   strategy:
     activeDeadlineSeconds: 21600
     rollingParams:
@@ -29,15 +29,15 @@ spec:
   template:
     metadata:
       labels:
-        app: fruit_management
-        deploymentconfig: fruit_management
+        app: fruit-management
+        deploymentconfig: fruit-management
     spec:
       containers:
-      - name: fruit_management
+      - name: fruit-management
         env:
         - name: VERSION
-          value: 0.0 (fruit_management)
-        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-fruit_management:0.0
+          value: 0.0 (fruit-management)
+        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-fruit-management:0.0
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 8778

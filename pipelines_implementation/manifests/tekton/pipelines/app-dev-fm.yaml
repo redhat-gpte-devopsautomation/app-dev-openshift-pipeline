@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: app-dev
+  name: app-dev-fruit-management
 spec:
   params:
   - name: GUID
@@ -121,7 +121,7 @@ spec:
       - name: SCRIPT
         value: oc start-build fruit-management-build -n $(params.GUID)-fruit-management-dev --from-file=pipelines_implementation/fruit-management/target/$(params.GUID)-fruit-management.jar --wait=true
     runAfter:
-    - apply-binary-build-bc
+    - mvn-test
     workspaces:
       - name: workspace
         workspace: source
@@ -154,7 +154,7 @@ spec:
           - latest
           - -n $(params.GUID)-fruit-management-dev tasks
     runAfter:
-    - dev-deploy-recreate-cm
+    - dev-deploy-patch-dc
   - name: dev-wait-for-rollout
     taskRef:
       name: wait-for-rollout
@@ -223,7 +223,7 @@ spec:
           - latest
           - -n $(params.GUID)-fruit-management-prod $(tasks.determine-dest-app.results.destApp)
     runAfter:
-    - prod-deploy-recreate-cm
+    - prod-deploy-patch-dc
   - name: prod-wait-for-rollout
     taskRef:
       name: wait-for-rollout

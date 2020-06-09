@@ -2,14 +2,14 @@ apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
 metadata:
   labels:
-    app: fruit_management-green
-  name: fruit_management-green
+    app: fruit-management-green
+  name: fruit-management-green
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
-    app: fruit_management-green
-    deploymentconfig: fruit_management-green
+    app: fruit-management-green
+    deploymentconfig: fruit-management-green
   strategy:
     activeDeadlineSeconds: 21600
     rollingParams:
@@ -29,15 +29,15 @@ spec:
   template:
     metadata:
       labels:
-        app: fruit_management-green
-        deploymentconfig: fruit_management-green
+        app: fruit-management-green
+        deploymentconfig: fruit-management-green
     spec:
       containers:
-      - name: fruit_management
+      - name: fruit-management
         env:
         - name: VERSION
-          value: 0.0 (fruit_management-green)
-        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-fruit_management:0.0
+          value: 0.0 (fruit-management-green)
+        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-fruit-management:0.0
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 8778
