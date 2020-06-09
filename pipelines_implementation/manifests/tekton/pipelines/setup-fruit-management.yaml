@@ -29,9 +29,9 @@ spec:
     - clone-gitea-repo
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-dev
+        value: pipelines_implementation/manifests/fruit-management-dev
       - name: namespace
-        value: $(params.GUID)-tasks-dev
+        value: $(params.GUID)-fruit-management-dev
     workspaces:
       - name: source
         workspace: source
@@ -42,9 +42,9 @@ spec:
       name: apply-manifests-namespace
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-prod
+        value: pipelines_implementation/manifests/fruit-management-prod
       - name: namespace
-        value: $(params.GUID)-tasks-prod
+        value: $(params.GUID)-fruit-management-prod
     workspaces:
       - name: source
         workspace: source
