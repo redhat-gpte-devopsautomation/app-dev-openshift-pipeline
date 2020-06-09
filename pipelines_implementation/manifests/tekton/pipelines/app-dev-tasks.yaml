@@ -1,0 +1,321 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: app-dev
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: clone-hw-repo
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    params:
+      - name: url
+        value: https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git
+      - name: deleteExisting
+        value: "true"
+      - name: revision
+        value: pipelines
+      - name: sslVerify
+        value: "false"
+    workspaces:
+      - name: output
+        workspace: source
+  - name: patch-pom
+    taskRef:
+      name: bash
+    runAfter:
+    - clone-hw-repo
+    params:
+      - name: ARGS
+        value: sed -i 's/GUID/$(params.GUID)/g' pipelines_implementation/fruit_management/pom.xml
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: retrieve-pom-version
+    taskRef:
+      name: store-variable
+      kind: Task
+    params:
+      - name: script
+        value: grep "<version>\K.*(?=</version>)" openshift-tasks/pom.xml  -m 1 -Po
+    workspaces:
+      - name: workspace
+        workspace: source
+    runAfter:
+    - clone-hw-repo
+  - name: generate-dev-version
+    taskRef:
+      name: generate-build-id
+    runAfter:
+    - retrieve-pom-version
+    params:
+      - name: base-version
+        value: $(tasks.retrieve-pom-version.results.variable)
+  - name: mvn-build
+    taskRef:
+      name: maven-java-8-local-repo
+      kind: Task
+    runAfter:
+    - generate-dev-version
+    params:
+      - name: GOALS
+        value: 
+        - "clean"
+        - "package"
+        - "-DskipTests=true"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: mvn-test
+    taskRef:
+      name: maven-java-8-local-repo
+      kind: Task
+    runAfter:
+    - mvn-build
+    params:
+      - name: GOALS
+        value: 
+        - "test"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: mvn-deploy
+    taskRef:
+      name: maven-java-8-local-repo
+      kind: Task
+    runAfter:
+    - mvn-test
+    params:
+      - name: GOALS
+        value: 
+        - "deploy"
+        - "-DskipTests=true"
+        - "-DaltDeploymentRepository=nexus::default::http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: apply-binary-build-bc
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc apply -f openshift-tasks/yaml/tasksbinarybuild.bc.yaml -n $(params.GUID)-tasks-dev
+    runAfter:
+    - mvn-deploy
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: binary-build
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc start-build taskbuild -n $(params.GUID)-tasks-dev --from-file=openshift-tasks/target/openshift-tasks.war --wait=true
+    runAfter:
+    - apply-binary-build-bc
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: tag-build
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc tag -n $(params.GUID)-tasks-dev $(params.GUID)-tasks:latest $(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id)
+    runAfter:
+    - binary-build
+  - name: dev-deploy-patch-dc
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc patch -n $(params.GUID)-tasks-dev dc tasks -p '{"spec":{"template":{"spec":{"containers":[{"name":"tasks","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-tasks-dev/$(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id)"}]}}}}'
+    runAfter:
+    - tag-build
+  - name: dev-deploy-delete-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-dev tasks-config
+    runAfter:
+    - dev-deploy-patch-dc
+  - name: dev-deploy-recreate-cm
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: ARGS
+        value:
+          - create
+          - configmap
+          - -n $(params.GUID)-tasks-dev tasks-config
+          - --from-file=openshift-tasks/configuration/application-users.properties 
+          - --from-file=openshift-tasks/configuration/application-roles.properties
+    runAfter:
+    - dev-deploy-delete-cm
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: dev-deploy-rollout
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - rollout
+          - latest
+          - -n $(params.GUID)-tasks-dev tasks
+    runAfter:
+    - dev-deploy-recreate-cm
+  - name: dev-wait-for-rollout
+    taskRef:
+      name: wait-for-rollout
+      kind: Task
+    params:
+      - name: namespace
+        value: $(params.GUID)-tasks-dev
+      - name: dc-name
+        value: tasks
+      - name: rc-name
+        value: tasks
+    runAfter:
+    - dev-deploy-rollout
+  - name: skopeo-copy-to-nexus
+    taskRef:
+      name: skopeo
+      kind: Task
+    params:
+      - name: ARGS
+        value: "copy --src-tls-verify=false --dest-tls-verify=false --dest-creds admin:redhat docker://image-registry.openshift-image-registry.svc:5000/$(params.GUID)-tasks-dev/$(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id) docker://homework-nexus-registry.gpte-hw-cicd.svc.cluster.local:5000/$(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id)"
+    runAfter:
+    - dev-wait-for-rollout
+  - name: tag-prod-version
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc tag -n $(params.GUID)-tasks-dev $(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id) $(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)
+    runAfter:
+    - skopeo-copy-to-nexus
+  - name: determine-dest-app
+    taskRef:
+      name: set-active-destination-apps
+      kind: Task
+    params:
+    - name: namespace
+      value: $(params.GUID)-tasks-prod
+    - name: dc-prefix
+      value: tasks
+    - name: route-name
+      value: tasks
+    runAfter:
+    - tag-prod-version
+  - name: prod-deploy-patch-dc
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value: 
+          - patch
+          - -n $(params.GUID)-tasks-prod 
+          - dc $(tasks.determine-dest-app.results.destApp) 
+          - -p {"spec":{"template":{"spec":{"containers":[{"name":"tasks","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-tasks-dev/$(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
+    runAfter:
+    - determine-dest-app
+  - name: prod-deploy-delete-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-prod $(tasks.determine-dest-app.results.destApp)-config
+    runAfter:
+    - prod-deploy-patch-dc
+  - name: prod-deploy-recreate-cm
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: ARGS
+        value:
+          - create
+          - configmap
+          - -n $(params.GUID)-tasks-prod $(tasks.determine-dest-app.results.destApp)-config
+          - --from-file=openshift-tasks/configuration/application-users.properties 
+          - --from-file=openshift-tasks/configuration/application-roles.properties
+    runAfter:
+    - prod-deploy-delete-cm
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: prod-deploy-rollout
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - rollout
+          - latest
+          - -n $(params.GUID)-tasks-prod $(tasks.determine-dest-app.results.destApp)
+    runAfter:
+    - prod-deploy-recreate-cm
+  - name: prod-wait-for-rollout
+    taskRef:
+      name: wait-for-rollout
+      kind: Task
+    params:
+      - name: namespace
+        value: $(params.GUID)-tasks-prod
+      - name: dc-name
+        value: $(tasks.determine-dest-app.results.destApp)
+      - name: rc-name
+        value: $(tasks.determine-dest-app.results.destApp)
+    runAfter:
+    - prod-deploy-rollout
+  - name: prod-switch-route
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - patch
+          - -n $(params.GUID)-tasks-prod
+          -  route tasks
+          - -p {"spec":{"to":{"name":"$(tasks.determine-dest-app.results.destApp)"}}}
+    runAfter:
+    - prod-wait-for-rollout
+  workspaces:
+    - name: source
+    - name: maven-settings 
+    - name: maven-repo
+    

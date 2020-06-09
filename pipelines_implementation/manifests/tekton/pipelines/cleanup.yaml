@@ -8,21 +8,28 @@ spec:
     type: string
     description: GUID for unique user
   tasks:
-  - name: clean-up-dev-tasks-app
+  - name: clean-up-tasks-dev-app
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
         value: oc delete all -n $(params.GUID)-tasks-dev -l app=tasks
-  - name: clean-up-dev-tasks-build
+  - name: clean-up-tasks-dev-build
     taskRef:
       name: openshift-client
       kind: ClusterTask
     params:
       - name: SCRIPT
         value: oc delete all -n $(params.GUID)-tasks-dev -l build=tasks
-  - name: clean-up-dev-tasks-cm
+  - name: clean-up-tasks-dev-taskbuild
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-dev -l build=tasks
+  - name: clean-up-tasks-dev-cm
     taskRef:
       name: openshift-client
       kind: ClusterTask
@@ -64,3 +71,10 @@ spec:
     params:
       - name: SCRIPT
         value: oc delete cm -n $(params.GUID)-tasks-prod tasks-green-config
+  - name: clean-up-tasks-route
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete route -n $(params.GUID)-tasks-prod tasks
