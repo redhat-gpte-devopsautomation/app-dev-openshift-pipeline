@@ -48,5 +48,19 @@ spec:
     workspaces:
       - name: source
         workspace: source
+  - name: apply-nexus-settings
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/nexus-settings-cm.yaml
+    runAfter:
+    - apply-prod-manifests
+    workingDir:
+      
+    workspaces:
+      - name: workspace
+        workspace: source
   workspaces:
     - name: source

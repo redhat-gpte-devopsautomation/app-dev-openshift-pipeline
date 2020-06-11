@@ -113,17 +113,6 @@ spec:
         workspace: maven-settings
       - name: maven-repo
         workspace: maven-repo
-  - name: list-paths
-    taskRef:
-      name: bash
-    runAfter:
-    - mvn-deploy
-    params:
-      - name: ARGS
-        value: pwd && ls pipelines_implementation/fruit_management && ls pipelines_implementation/fruit_management/target
-    workspaces:
-      - name: workspace
-        workspace: source
   - name: binary-build
     taskRef:
       name: openshift-client-workspace
