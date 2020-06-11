@@ -1,0 +1,265 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: app-dev-fruit-management
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: clone-hw-repo
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    params:
+      - name: url
+        value: https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git
+      - name: deleteExisting
+        value: "true"
+      - name: revision
+        value: pipelines
+      - name: sslVerify
+        value: "false"
+    workspaces:
+      - name: output
+        workspace: source
+  - name: patch-pom
+    taskRef:
+      name: bash
+    runAfter:
+    - clone-hw-repo
+    params:
+      - name: ARGS
+        value: sed -i 's/GUID/$(params.GUID)/g' pipelines_implementation/fruit_management/pom.xml
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: retrieve-pom-version
+    taskRef:
+      name: store-variable
+      kind: Task
+    params:
+      - name: script
+        value: grep "<version>\K.*(?=</version>)" pipelines_implementation/fruit_management/pom.xml  -m 1 -Po
+    workspaces:
+      - name: workspace
+        workspace: source
+    runAfter:
+    - clone-hw-repo
+  - name: generate-dev-version
+    taskRef:
+      name: generate-build-id
+    runAfter:
+    - retrieve-pom-version
+    params:
+      - name: base-version
+        value: $(tasks.retrieve-pom-version.results.variable)
+  - name: mvn-build
+    taskRef:
+      name: maven-local-repo
+      kind: Task
+    runAfter:
+    - generate-dev-version
+    params:
+      - name: GOALS
+        value: 
+        - "clean"
+        - "package"
+        - "-DskipTests=true"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: mvn-test
+    taskRef:
+      name: maven-local-repo
+      kind: Task
+    runAfter:
+    - mvn-build
+    params:
+      - name: GOALS
+        value: 
+        - "test"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: mvn-deploy
+    taskRef:
+      name: maven-local-repo
+      kind: Task
+    runAfter:
+    - mvn-test
+    params:
+      - name: GOALS
+        value: 
+        - "deploy"
+        - "-DskipTests=true"
+        - "-DaltDeploymentRepository=nexus::default::http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases"
+        - "-fpipelines_implementation/fruit_management"
+    workspaces:
+      - name: source
+        workspace: source
+      - name: maven-settings
+        workspace: maven-settings
+      - name: maven-repo
+        workspace: maven-repo
+  - name: binary-build
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc start-build fruit-management-build -n $(params.GUID)-fruit-management-dev --from-file=pipelines_implementation/fruit_management/target/$(params.GUID)-fruit-management-$(tasks.retrieve-pom-version.results.variable)-runner.jar --wait=true
+    runAfter:
+    - mvn-deploy
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: tag-build
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc tag -n $(params.GUID)-fruit-management-dev $(params.GUID)-fruit-management:latest $(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id)
+    runAfter:
+    - binary-build
+  - name: dev-deploy-patch-dc
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value: 
+          - patch
+          - -n $(params.GUID)-fruit-management-prod 
+          - dc $(tasks.determine-dest-app.results.destApp) 
+          - -p {"spec":{"template":{"spec":{"containers":[{"name":"$(tasks.determine-dest-app.results.destApp)","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-prod/$(params.GUID)-fruit-management:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
+    runAfter:
+    - tag-build
+  - name: dev-deploy-rollout
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - rollout
+          - latest
+          - -n $(params.GUID)-fruit-management-dev fruit-management
+    runAfter:
+    - dev-deploy-patch-dc
+  - name: dev-wait-for-rollout
+    taskRef:
+      name: wait-for-rollout
+      kind: Task
+    params:
+      - name: namespace
+        value: $(params.GUID)-fruit-management-dev
+      - name: dc-name
+        value: fruit-management
+      - name: rc-name
+        value: fruit-management
+    runAfter:
+    - dev-deploy-rollout
+  - name: skopeo-copy-to-nexus
+    taskRef:
+      name: skopeo
+      kind: Task
+    params:
+      - name: ARGS
+        value: "copy --src-tls-verify=false --dest-tls-verify=false --dest-creds admin:redhat docker://image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id) docker://homework-nexus-registry.gpte-hw-cicd.svc.cluster.local:5000/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id)"
+    runAfter:
+    - dev-wait-for-rollout
+  - name: tag-prod-version
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value: 
+          - tag
+          - -n $(params.GUID)-fruit-management-prod
+          - $(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id) 
+          - $(params.GUID)-fruit-management-prod/$(params.GUID)-fruit-management:$(tasks.retrieve-pom-version.results.variable)
+    runAfter:
+    - skopeo-copy-to-nexus
+  - name: determine-dest-app
+    taskRef:
+      name: set-active-destination-apps
+      kind: Task
+    params:
+    - name: namespace
+      value: $(params.GUID)-fruit-management-prod
+    - name: dc-prefix
+      value: fruit-management
+    - name: route-name
+      value: fruit-management
+    runAfter:
+    - tag-prod-version
+  - name: prod-deploy-patch-dc
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value: 
+          - patch
+          - -n $(params.GUID)-fruit-management-prod 
+          - dc $(tasks.determine-dest-app.results.destApp) 
+          - -p {"spec":{"template":{"spec":{"containers":[{"name":"fruit-management","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
+    runAfter:
+    - determine-dest-app
+  - name: prod-deploy-rollout
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - rollout
+          - latest
+          - -n $(params.GUID)-fruit-management-prod $(tasks.determine-dest-app.results.destApp)
+    runAfter:
+    - prod-deploy-patch-dc
+  - name: prod-wait-for-rollout
+    taskRef:
+      name: wait-for-rollout
+      kind: Task
+    params:
+      - name: namespace
+        value: $(params.GUID)-fruit-management-prod
+      - name: dc-name
+        value: $(tasks.determine-dest-app.results.destApp)
+      - name: rc-name
+        value: $(tasks.determine-dest-app.results.destApp)
+    runAfter:
+    - prod-deploy-rollout
+  - name: prod-switch-route
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: ARGS
+        value:
+          - patch
+          - -n $(params.GUID)-fruit-management-prod
+          -  route fruit-management
+          - -p {"spec":{"to":{"name":"$(tasks.determine-dest-app.results.destApp)"}}}
+    runAfter:
+    - prod-wait-for-rollout
+  workspaces:
+    - name: source
+    - name: maven-settings 
+    - name: maven-repo
+    

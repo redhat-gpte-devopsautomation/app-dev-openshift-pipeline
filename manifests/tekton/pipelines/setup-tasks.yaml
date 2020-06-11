@@ -1,0 +1,76 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: setup-tasks
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: clone-gitea-repo
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    params:
+      - name: url
+        value: https://homework-gitea.apps.shared.na.openshift.opentlc.com/bgottfri-redhat.com/ocp4_app_deploy_homework.git
+      - name: deleteExisting
+        value: "true"
+      - name: revision
+        value: pipelines
+    workspaces:
+      - name: output
+        workspace: source
+  - name: apply-dev-manifests
+    taskRef:
+      name: apply-manifests-namespace
+    runAfter:
+    - clone-gitea-repo
+    params:
+      - name: manifest_dir
+        value: pipelines_implementation/manifests/tasks-dev
+      - name: namespace
+        value: $(params.GUID)-tasks-dev
+    workspaces:
+      - name: source
+        workspace: source
+  - name: apply-prod-manifests
+    runAfter:
+    - apply-dev-manifests
+    taskRef:
+      name: apply-manifests-namespace
+    params:
+      - name: manifest_dir
+        value: pipelines_implementation/manifests/tasks-prod
+      - name: namespace
+        value: $(params.GUID)-tasks-prod
+    workspaces:
+      - name: source
+        workspace: source
+  - name: apply-nexus-settings
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/nexus-settings-cm.yaml
+    runAfter:
+    - apply-prod-manifests
+    workspaces:
+      - name: workspace
+        workspace: source
+  - name: apply-maven-repo
+    taskRef:
+      name: openshift-client-workspace
+      kind: Task
+    params:
+      - name: SCRIPT
+        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/maven-repo-pvc.yaml
+    runAfter:
+    - apply-prod-manifests
+    workspaces:
+      - name: workspace
+        workspace: source
+  workspaces:
+    - name: source

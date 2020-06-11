@@ -1,0 +1,15 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: fruit-management
+  name: fruit-management
+spec:
+  port:
+    targetPort: 8080
+  subdomain: ""
+  to:
+    kind: Service
+    name: fruit-management-green
+    weight: 100
+  wildcardPolicy: None

@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: set-active-destination-apps
+  description: 
+  - |-
+    Determine which application is the Active application and which is the Destination application for a route that has green and blue DCs.
+spec:
+  params:
+  - default: default
+    description: The namespace within which to do the checks
+    name: namespace
+    type: string
+  - description: The deployment config prefix before "-green" and "-blue"
+    name: dc-prefix
+    type: string
+  - description: The route name from which to retrieve the active application
+    name: route-name
+    type: string
+  results:
+    - name: activeApp
+      description: The active application
+    - name: destApp
+      description: The destination application
+  steps:
+  - args:
+    - |-
+      activeApp=$(oc get route $(params.route-name) -n $(params.namespace) -o jsonpath='{.spec.to.name}' | tr -d "\n")
+      if [ "$activeApp" = "$(params.dc-prefix)-green" ]
+      then destApp="$(params.dc-prefix)-blue"
+      else destApp="$(params.dc-prefix)-green"
+      fi
+      echo "$activeApp" | tr -d "\n" | tee $(results.activeApp.path)
+      echo "$destApp" | tr -d "\n" | tee $(results.destApp.path)
+      echo "Active Application: $activeApp"
+      echo "Destination Application: $destApp"
+      echo -----------------------------------
+    command:
+    - /bin/bash
+    - -c
+    image: quay.io/openshift/origin-cli:latest
+    name: apply
+    resources: {}

@@ -1,0 +1,80 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cleanup-tasks
+spec:
+  params:
+  - name: GUID
+    type: string
+    description: GUID for unique user
+  tasks:
+  - name: clean-up-tasks-dev-app
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-dev -l app=tasks
+  - name: clean-up-tasks-dev-build
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-dev -l build=tasks
+  - name: clean-up-tasks-dev-taskbuild
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-dev -l build=tasks
+  - name: clean-up-tasks-dev-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-dev tasks-config
+  - name: clean-up-nexus-settings-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-dev nexus-settings
+  - name: clean-up-tasks-blue
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-prod -l app=tasks-blue
+  - name: clean-up-tasks-green
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete all -n $(params.GUID)-tasks-prod -l app=tasks-green
+  - name: clean-up-blue-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-prod tasks-blue-config
+  - name: clean-up-green-tasks-cm
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete cm -n $(params.GUID)-tasks-prod tasks-green-config
+  - name: clean-up-tasks-route
+    taskRef:
+      name: openshift-client
+      kind: ClusterTask
+    params:
+      - name: SCRIPT
+        value: oc delete route -n $(params.GUID)-tasks-prod tasks
