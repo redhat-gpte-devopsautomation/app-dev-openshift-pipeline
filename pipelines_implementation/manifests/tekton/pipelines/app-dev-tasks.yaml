@@ -31,7 +31,7 @@ spec:
     - clone-hw-repo
     params:
       - name: ARGS
-        value: sed -i 's/GUID/$(params.GUID)/g' pipelines_implementation/fruit_management/pom.xml
+        value: sed -i 's/GUID/$(params.GUID)/g' openshift-tasks/pom.xml
     workspaces:
       - name: workspace
         workspace: source
@@ -67,7 +67,7 @@ spec:
         - "clean"
         - "package"
         - "-DskipTests=true"
-        - "-fpipelines_implementation/fruit_management"
+        - "-fopenshift-tasks"
     workspaces:
       - name: source
         workspace: source
@@ -85,7 +85,7 @@ spec:
       - name: GOALS
         value: 
         - "test"
-        - "-fpipelines_implementation/fruit_management"
+        - "-fopenshift-tasks"
     workspaces:
       - name: source
         workspace: source
@@ -105,7 +105,7 @@ spec:
         - "deploy"
         - "-DskipTests=true"
         - "-DaltDeploymentRepository=nexus::default::http://homework-nexus.gpte-hw-cicd.svc.cluster.local:8081/repository/releases"
-        - "-fpipelines_implementation/fruit_management"
+        - "-fopenshift-tasks"
     workspaces:
       - name: source
         workspace: source

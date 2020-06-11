@@ -25,6 +25,6 @@ spec:
     name: oc
     resources: {}
     script: $(params.SCRIPT)
+    workingDir: /workspace/workspace
   workspaces:
     - name: workspace
-      mountPath: /workspace

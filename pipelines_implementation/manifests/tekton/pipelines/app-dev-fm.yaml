@@ -41,7 +41,7 @@ spec:
       kind: Task
     params:
       - name: script
-        value: grep "<version>\K.*(?=</version>)" openshift-tasks/pom.xml  -m 1 -Po
+        value: grep "<version>\K.*(?=</version>)" pipelines_implementation/fruit_management/pom.xml  -m 1 -Po
     workspaces:
       - name: workspace
         workspace: source
@@ -57,7 +57,7 @@ spec:
         value: $(tasks.retrieve-pom-version.results.variable)
   - name: mvn-build
     taskRef:
-      name: maven-java-8-local-repo
+      name: maven-local-repo
       kind: Task
     runAfter:
     - generate-dev-version
@@ -67,7 +67,7 @@ spec:
         - "clean"
         - "package"
         - "-DskipTests=true"
-        - "-fpipelines_implementation/fruit-management"
+        - "-fpipelines_implementation/fruit_management"
     workspaces:
       - name: source
         workspace: source
@@ -77,7 +77,7 @@ spec:
         workspace: maven-repo
   - name: mvn-test
     taskRef:
-      name: maven-java-8-local-repo
+      name: maven-local-repo
       kind: Task
     runAfter:
     - mvn-build
@@ -95,7 +95,7 @@ spec:
         workspace: maven-repo
   - name: mvn-deploy
     taskRef:
-      name: maven-java-8-local-repo
+      name: maven-local-repo
       kind: Task
     runAfter:
     - mvn-test
@@ -113,15 +113,26 @@ spec:
         workspace: maven-settings
       - name: maven-repo
         workspace: maven-repo
+  - name: list-paths
+    taskRef:
+      name: bash
+    runAfter:
+    - mvn-deploy
+    params:
+      - name: ARGS
+        value: pwd && ls pipelines_implementation/fruit_management && ls pipelines_implementation/fruit_management/target
+    workspaces:
+      - name: workspace
+        workspace: source
   - name: binary-build
     taskRef:
       name: openshift-client-workspace
       kind: Task
     params:
       - name: SCRIPT
-        value: oc start-build fruit-management-build -n $(params.GUID)-fruit-management-dev --from-file=pipelines_implementation/fruit-management/target/$(params.GUID)-fruit-management.jar --wait=true
+        value: oc start-build fruit-management-build -n $(params.GUID)-fruit-management-dev --from-file=pipelines_implementation/fruit_management/target/$(params.GUID)-fruit-management-$(tasks.retrieve-pom-version.results.variable)-runner.jar --wait=true
     runAfter:
-    - mvn-test
+    - list-paths
     workspaces:
       - name: workspace
         workspace: source
@@ -140,7 +151,7 @@ spec:
       kind: ClusterTask
     params:
       - name: SCRIPT
-        value: oc patch -n $(params.GUID)-fruit-management-dev dc tasks -p '{"spec":{"template":{"spec":{"containers":[{"name":"fruit-management","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id)"}]}}}}'
+        value: oc patch -n $(params.GUID)-fruit-management-dev dc fruit-management -p '{"spec":{"template":{"spec":{"containers":[{"name":"fruit-management","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id)"}]}}}}'
     runAfter:
     - tag-build
   - name: dev-deploy-rollout
@@ -152,7 +163,7 @@ spec:
         value:
           - rollout
           - latest
-          - -n $(params.GUID)-fruit-management-dev tasks
+          - -n $(params.GUID)-fruit-management-dev fruit-management
     runAfter:
     - dev-deploy-patch-dc
   - name: dev-wait-for-rollout
