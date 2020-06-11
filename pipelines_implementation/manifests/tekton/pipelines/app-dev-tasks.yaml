@@ -220,8 +220,12 @@ spec:
       name: openshift-client
       kind: ClusterTask
     params:
-      - name: SCRIPT
-        value: oc tag -n $(params.GUID)-tasks-dev $(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id) $(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)
+      - name: ARGS
+        value: 
+          - tag 
+          - -n $(params.GUID)-tasks-prod 
+          - $(params.GUID)-tasks-dev/$(params.GUID)-tasks:$(tasks.generate-dev-version.results.build-id)
+          - $(params.GUID)-tasks-prod/$(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)
     runAfter:
     - skopeo-copy-to-nexus
   - name: determine-dest-app
@@ -247,7 +251,7 @@ spec:
           - patch
           - -n $(params.GUID)-tasks-prod 
           - dc $(tasks.determine-dest-app.results.destApp) 
-          - -p {"spec":{"template":{"spec":{"containers":[{"name":"tasks","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-tasks-dev/$(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
+          - -p {"spec":{"template":{"spec":{"containers":[{"name":"$(tasks.determine-dest-app.results.destApp)","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-tasks-prod/$(params.GUID)-tasks:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
     runAfter:
     - determine-dest-app
   - name: prod-deploy-delete-cm

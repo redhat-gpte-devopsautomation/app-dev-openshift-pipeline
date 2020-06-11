@@ -29,7 +29,7 @@ spec:
       - env:
         - name: VERSION
           value: 0.0 (tasks-dev)
-        image: image-registry.openshift-image-registry.svc:5000/1234-tasks-dev/1234-tasks:0.0-0
+        image: image-registry.openshift-image-registry.svc:5000/GUID-tasks-dev/GUID-tasks:0.0-0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

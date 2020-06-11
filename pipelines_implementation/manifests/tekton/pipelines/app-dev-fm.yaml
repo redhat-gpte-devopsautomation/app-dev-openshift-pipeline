@@ -121,7 +121,7 @@ spec:
       - name: SCRIPT
         value: oc start-build fruit-management-build -n $(params.GUID)-fruit-management-dev --from-file=pipelines_implementation/fruit_management/target/$(params.GUID)-fruit-management-$(tasks.retrieve-pom-version.results.variable)-runner.jar --wait=true
     runAfter:
-    - list-paths
+    - mvn-deploy
     workspaces:
       - name: workspace
         workspace: source
@@ -139,8 +139,12 @@ spec:
       name: openshift-client
       kind: ClusterTask
     params:
-      - name: SCRIPT
-        value: oc patch -n $(params.GUID)-fruit-management-dev dc fruit-management -p '{"spec":{"template":{"spec":{"containers":[{"name":"fruit-management","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-dev/$(params.GUID)-fruit-management:$(tasks.generate-dev-version.results.build-id)"}]}}}}'
+      - name: ARGS
+        value: 
+          - patch
+          - -n $(params.GUID)-fruit-management-prod 
+          - dc $(tasks.determine-dest-app.results.destApp) 
+          - -p {"spec":{"template":{"spec":{"containers":[{"name":"$(tasks.determine-dest-app.results.destApp)","image":"image-registry.openshift-image-registry.svc:5000/$(params.GUID)-fruit-management-prod/$(params.GUID)-fruit-management:$(tasks.retrieve-pom-version.results.variable)"}]}}}}
     runAfter:
     - tag-build
   - name: dev-deploy-rollout
