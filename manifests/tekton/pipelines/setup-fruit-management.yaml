@@ -29,7 +29,7 @@ spec:
     - clone-gitea-repo
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/fruit-management-dev
+        value: manifests/fruit-management-dev
       - name: namespace
         value: $(params.GUID)-fruit-management-dev
     workspaces:
@@ -42,7 +42,7 @@ spec:
       name: apply-manifests-namespace
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/fruit-management-prod
+        value: manifests/fruit-management-prod
       - name: namespace
         value: $(params.GUID)-fruit-management-prod
     workspaces:
@@ -54,7 +54,7 @@ spec:
       kind: Task
     params:
       - name: SCRIPT
-        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/nexus-settings-cm.yaml
+        value: oc apply -f manifests/tekton/miscellaneous/nexus-settings-cm.yaml
     runAfter:
     - apply-prod-manifests
     workspaces:

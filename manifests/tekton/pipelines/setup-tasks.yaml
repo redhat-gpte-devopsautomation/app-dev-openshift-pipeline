@@ -29,7 +29,7 @@ spec:
     - clone-gitea-repo
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-dev
+        value: manifests/tasks-dev
       - name: namespace
         value: $(params.GUID)-tasks-dev
     workspaces:
@@ -42,7 +42,7 @@ spec:
       name: apply-manifests-namespace
     params:
       - name: manifest_dir
-        value: pipelines_implementation/manifests/tasks-prod
+        value: manifests/tasks-prod
       - name: namespace
         value: $(params.GUID)-tasks-prod
     workspaces:
@@ -54,7 +54,7 @@ spec:
       kind: Task
     params:
       - name: SCRIPT
-        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/nexus-settings-cm.yaml
+        value: oc apply -f manifests/tekton/miscellaneous/nexus-settings-cm.yaml
     runAfter:
     - apply-prod-manifests
     workspaces:
@@ -66,7 +66,7 @@ spec:
       kind: Task
     params:
       - name: SCRIPT
-        value: oc apply -f pipelines_implementation/manifests/tekton/miscellaneous/maven-repo-pvc.yaml
+        value: oc apply -f manifests/tekton/miscellaneous/maven-repo-pvc.yaml
     runAfter:
     - apply-prod-manifests
     workspaces:
